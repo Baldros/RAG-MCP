@@ -47,9 +47,18 @@ Busca requer o modo `interaction`; ingestão e reindexação requerem `ingestion
 
 As respostas bem-sucedidas preservam `{ "ok": true, "data": ... }` em texto e conteúdo estruturado MCP. Falhas preservam `{ "ok": false, "error": { "code", "message", "hint" } }` como erro de ferramenta.
 
-## Exemplo de instalação no Codex
+## Instalação no Codex pelo terminal
 
-Você pode adicionar o trecho abaixo a `C:\Users\amori\.codex\config.toml` **quando quiser instalar o MCP**. Este repositório não altera essa configuração. Use caminhos absolutos e ajuste `command` caso seu Node esteja em outro local.
+Depois de `npm ci` e `npm run build`, registre o servidor pelo PowerShell:
+
+```powershell
+codex mcp add rag-mcp --env 'RAG_PROJECT_DIR=E:\Rag-Project' --env 'RAG_PYTHON=E:\Rag-Project\.venv\Scripts\python.exe' -- 'C:\Program Files\nodejs\node.exe' 'E:\MCPs\RAG-MCP\dist\src\server.js'
+codex mcp list
+```
+
+`codex mcp add` grava a entrada no `config.toml` do Codex; `codex mcp list` confirma o registro. Ajuste os caminhos se as instalações estiverem em outros locais. Para que `rag_on` e `rag_switch` possam aguardar o carregamento explícito dos modelos, acrescente `startup_timeout_sec = 30` e `tool_timeout_sec = 420` à seção `[mcp_servers.rag-mcp]` gerada em `C:\Users\amori\.codex\config.toml`. O comando `codex mcp add` não oferece opções próprias para esses tempos.
+
+Também é possível configurar o MCP editando o arquivo diretamente, sem executar `codex mcp add`:
 
 ```toml
 [mcp_servers.rag-mcp]
@@ -63,7 +72,13 @@ RAG_PROJECT_DIR = "E:\\Rag-Project"
 RAG_PYTHON = "E:\\Rag-Project\\.venv\\Scripts\\python.exe"
 ```
 
-O tempo maior de ferramenta permite que `rag_on` e `rag_switch` aguardem o carregamento explícito dos modelos. O Codex inicia o servidor stdio ao conectar; não execute `node dist/src/server.js` separadamente como um serviço. O processo Node pode existir enquanto o RAG permanece desligado. A [documentação oficial do Codex](https://developers.openai.com/codex/mcp) descreve as opções `command`, `args`, `env` e os tempos de execução.
+Use um método ou outro para evitar uma entrada duplicada. Este repositório não altera a configuração do usuário. A [documentação oficial do Codex](https://developers.openai.com/codex/mcp) descreve o comando e as opções de configuração.
+
+## Quando o servidor inicia
+
+O RAG-MCP **não é um serviço do Windows e não inicia por si ao ligar o PC**. Depois de configurado, o Codex inicia o processo Node via stdio quando abre uma conexão MCP; se o Codex for iniciado junto com o Windows, o processo pode aparecer nesse momento. Ao fechar a conexão, o processo MCP termina. Não é preciso executar `node dist/src/server.js` separadamente.
+
+Esse processo Node parado à espera de ferramentas não carrega Python, PyTorch nem modelos. Uma chamada de metadados executa a CLI Python apenas durante a chamada, sem ligar modelos. Só `rag_on` ou `rag_switch` carrega a sessão RAG; ela é compartilhada e pode continuar ativa mesmo depois que o MCP se desconecta. Use `rag_off` para liberar os recursos quando terminar. Assim, ter o MCP disponível no Codex não significa manter a GPU ocupada.
 
 ## Testes
 
