@@ -3,7 +3,11 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 export type CliError = { code: string; message: string; hint?: string };
-export type CliResult = { ok: true; data: unknown } | { ok: false; error: CliError };
+/** Paginação que a CLI imprime ao lado de data nas listagens. */
+export type CliPage = { limit: number | null; offset: number; has_more: boolean };
+export type CliResult =
+  | { ok: true; data: unknown; page?: CliPage }
+  | { ok: false; error: CliError };
 export type CliRunner = (args: string[]) => Promise<CliResult>;
 export type SpawnCli = (
   executable: string,

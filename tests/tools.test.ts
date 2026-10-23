@@ -79,6 +79,26 @@ test("every functional CLI operation has a typed MCP tool and fixed argv mapping
   }
 });
 
+test("every tool parameter carries a description for the model", async () => {
+  const { client, server } = await connected(async () => ({ ok: true, data: {} }));
+  try {
+    const listed = await client.listTools();
+    const undocumented: string[] = [];
+    for (const tool of listed.tools) {
+      const schema = tool.inputSchema as {
+        properties?: Record<string, { description?: string }>;
+      };
+      for (const [name, property] of Object.entries(schema.properties ?? {})) {
+        if (!property.description) undocumented.push(`${tool.name}.${name}`);
+      }
+    }
+    assert.deepEqual(undocumented, []);
+  } finally {
+    await client.close();
+    await server.close();
+  }
+});
+
 test("two MCP clients share one RAG session; no tool implicitly starts it", async () => {
   let mode: "interaction" | "ingestion" | undefined;
   const commands: string[] = [];
